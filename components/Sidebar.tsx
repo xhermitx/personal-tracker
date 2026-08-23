@@ -19,7 +19,7 @@ export default function Sidebar({ user }: Props) {
   const router = useRouter();
   const { state } = useApp();
 
-  const pendingTasks = state.tasks.filter(t => t.userId === user.id && t.status !== 'done').length;
+  const pendingTasks = state.tasks.filter(t => t.assigneeId === user.id && t.status !== 'done').length;
 
   return (
     <aside className="sidebar">

@@ -86,8 +86,8 @@ export default function TaskCard({ task, onUpdate, onDelete, isDragging }: Props
 
         <div className="task-card-footer">
           <div className="task-card-meta">
-            {task.assignee && (
-              <span className="task-assignee">👤 {task.assignee}</span>
+            {task.assigneeId && (
+              <span className="task-assignee">👤 Assignee: {task.assigneeId.slice(0, 5)}...</span>
             )}
             {timeStr && <span className="badge badge-blue">⏱ {timeStr}</span>}
             {deadline && <span className={`badge ${deadline.cls}`}>📅 {deadline.label}</span>}

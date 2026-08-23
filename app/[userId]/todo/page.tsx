@@ -25,7 +25,7 @@ export default function TodoPage() {
     );
   }
 
-  const userTasks = state.tasks.filter(t => t.userId === userId);
+  const userTasks = state.tasks.filter(t => t.assigneeId === userId);
 
   return (
     <div>
@@ -37,9 +37,17 @@ export default function TodoPage() {
       </div>
 
       <TodoBoard
-        userId={userId}
         tasks={userTasks}
-        onAdd={(data) => addTask({ userId, title: '', description: '', assignee: '', estimatedMinutes: 0, deadline: '', group: 'today', status: 'todo', ...data })}
+        onAdd={(data) => addTask({ 
+          title: '', 
+          description: '', 
+          assigneeId: userId, 
+          estimatedMinutes: 0, 
+          deadline: '', 
+          group: 'today', 
+          status: 'todo', 
+          ...data 
+        })}
         onUpdate={updateTask}
         onDelete={deleteTask}
         onMove={moveTask}

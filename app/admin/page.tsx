@@ -42,7 +42,7 @@ export default function AdminPage() {
       ) : (
         <div className="admin-users-grid">
           {state.users.map(user => {
-            const taskCount = state.tasks.filter(t => t.userId === user.id).length;
+            const taskCount = state.tasks.filter(t => t.assigneeId === user.id).length;
             const habitCount = state.habitLogs.filter(h => h.userId === user.id).length;
             return (
               <div key={user.id} className="admin-user-card">
