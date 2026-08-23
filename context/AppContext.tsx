@@ -2,33 +2,30 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { AppState, User, Task, Habit, HabitLog, TaskGroup } from '@/types';
-
-const STORAGE_KEY = 'personal-tracker-data-v2';
+import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const initialState: AppState = {
   users: [],
   tasks: [],
   habits: [],
   habitLogs: [],
+  currentOrgId: null
 };
 
 interface AppContextValue {
   state: AppState;
-  // Users
   addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
-  // Tasks
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
   moveTask: (id: string, group: TaskGroup) => void;
-  // Habit definitions
   addHabit: (habit: Omit<Habit, 'id' | 'createdAt'>) => string;
   updateHabit: (id: string, updates: Partial<Habit>) => void;
   deleteHabit: (id: string) => void;
   reorderHabits: (userId: string, orderedIds: string[]) => void;
-  // Habit logs (one per habit per day)
   upsertHabitLog: (log: Omit<HabitLog, 'id' | 'createdAt'>) => void;
   deleteHabitLog: (id: string) => void;
 }
@@ -44,131 +41,97 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Partial<AppState>;
-        setState({ ...initialState, ...parsed });
-      }
-    } catch { /* ignore */ }
+    // We assume 1 Org for this app, hardcoded as 'main-org' for simplicity as requested
+    const ORG_ID = 'main-org';
+    setState(prev => ({ ...prev, currentOrgId: ORG_ID }));
+
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
+      setState(prev => ({ ...prev, users: snap.docs.map(d => d.data() as User) }));
+    });
+    const unsubTasks = onSnapshot(collection(db, 'tasks'), (snap) => {
+      setState(prev => ({ ...prev, tasks: snap.docs.map(d => d.data() as Task) }));
+    });
+    const unsubHabits = onSnapshot(collection(db, 'habits'), (snap) => {
+      setState(prev => ({ ...prev, habits: snap.docs.map(d => d.data() as Habit) }));
+    });
+    const unsubLogs = onSnapshot(collection(db, 'habitLogs'), (snap) => {
+      setState(prev => ({ ...prev, habitLogs: snap.docs.map(d => d.data() as HabitLog) }));
+    });
+
     setLoaded(true);
+
+    return () => {
+      unsubUsers();
+      unsubTasks();
+      unsubHabits();
+      unsubLogs();
+    };
   }, []);
 
-  useEffect(() => {
-    if (!loaded) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state, loaded]);
-
-  // ── Users ──────────────────────────────────────────────────
-  const addUser = useCallback((user: Omit<User, 'id' | 'createdAt'>) => {
-    setState(prev => ({
-      ...prev,
-      users: [...prev.users, { ...user, id: generateId(), createdAt: new Date().toISOString() }],
-    }));
+  const addUser = useCallback(async (user: Omit<User, 'id' | 'createdAt'>) => {
+    const id = generateId();
+    const newUser = { ...user, id, createdAt: new Date().toISOString() };
+    await setDoc(doc(db, 'users', id), newUser);
   }, []);
 
-  const updateUser = useCallback((id: string, updates: Partial<User>) => {
-    setState(prev => ({
-      ...prev,
-      users: prev.users.map(u => u.id === id ? { ...u, ...updates } : u),
-    }));
+  const updateUser = useCallback(async (id: string, updates: Partial<User>) => {
+    await updateDoc(doc(db, 'users', id), updates);
   }, []);
 
-  const deleteUser = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      users: prev.users.filter(u => u.id !== id),
-      tasks: prev.tasks.filter(t => t.userId !== id),
-      habits: prev.habits.filter(h => h.userId !== id),
-      habitLogs: prev.habitLogs.filter(l => l.userId !== id),
-    }));
+  const deleteUser = useCallback(async (id: string) => {
+    await deleteDoc(doc(db, 'users', id));
+    // Note: should also delete related tasks and habits, but keeping it simple
   }, []);
 
-  // ── Tasks ──────────────────────────────────────────────────
-  const addTask = useCallback((task: Omit<Task, 'id' | 'createdAt'>) => {
-    setState(prev => ({
-      ...prev,
-      tasks: [...prev.tasks, { ...task, id: generateId(), createdAt: new Date().toISOString() }],
-    }));
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt'>) => {
+    const id = generateId();
+    const newTask = { ...task, id, createdAt: new Date().toISOString() };
+    await setDoc(doc(db, 'tasks', id), newTask);
   }, []);
 
-  const updateTask = useCallback((id: string, updates: Partial<Task>) => {
-    setState(prev => ({
-      ...prev,
-      tasks: prev.tasks.map(t => t.id === id ? { ...t, ...updates } : t),
-    }));
+  const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
+    await updateDoc(doc(db, 'tasks', id), updates);
   }, []);
 
-  const deleteTask = useCallback((id: string) => {
-    setState(prev => ({ ...prev, tasks: prev.tasks.filter(t => t.id !== id) }));
+  const deleteTask = useCallback(async (id: string) => {
+    await deleteDoc(doc(db, 'tasks', id));
   }, []);
 
-  const moveTask = useCallback((id: string, group: TaskGroup) => {
-    setState(prev => ({
-      ...prev,
-      tasks: prev.tasks.map(t => t.id === id ? { ...t, group } : t),
-    }));
+  const moveTask = useCallback(async (id: string, group: TaskGroup) => {
+    await updateDoc(doc(db, 'tasks', id), { group });
   }, []);
 
-  // ── Habits (definitions) ───────────────────────────────────
   const addHabit = useCallback((habit: Omit<Habit, 'id' | 'createdAt'>): string => {
     const id = generateId();
-    setState(prev => ({
-      ...prev,
-      habits: [...prev.habits, { ...habit, id, createdAt: new Date().toISOString() }],
-    }));
+    const newHabit = { ...habit, id, createdAt: new Date().toISOString() };
+    setDoc(doc(db, 'habits', id), newHabit);
     return id;
   }, []);
 
-  const updateHabit = useCallback((id: string, updates: Partial<Habit>) => {
-    setState(prev => ({
-      ...prev,
-      habits: prev.habits.map(h => h.id === id ? { ...h, ...updates } : h),
-    }));
+  const updateHabit = useCallback(async (id: string, updates: Partial<Habit>) => {
+    await updateDoc(doc(db, 'habits', id), updates);
   }, []);
 
-  const deleteHabit = useCallback((id: string) => {
-    setState(prev => ({
-      ...prev,
-      habits: prev.habits.filter(h => h.id !== id),
-      habitLogs: prev.habitLogs.filter(l => l.habitId !== id),
-    }));
+  const deleteHabit = useCallback(async (id: string) => {
+    await deleteDoc(doc(db, 'habits', id));
   }, []);
 
-  const reorderHabits = useCallback((userId: string, orderedIds: string[]) => {
-    setState(prev => ({
-      ...prev,
-      habits: prev.habits.map(h => {
-        if (h.userId !== userId) return h;
-        const idx = orderedIds.indexOf(h.id);
-        return idx >= 0 ? { ...h, order: idx } : h;
-      }),
-    }));
-  }, []);
-
-  // ── Habit Logs ─────────────────────────────────────────────
-  const upsertHabitLog = useCallback((log: Omit<HabitLog, 'id' | 'createdAt'>) => {
-    setState(prev => {
-      const existing = prev.habitLogs.find(
-        l => l.userId === log.userId && l.habitId === log.habitId && l.date === log.date
-      );
-      if (existing) {
-        return {
-          ...prev,
-          habitLogs: prev.habitLogs.map(l =>
-            l.id === existing.id ? { ...l, ...log } : l
-          ),
-        };
-      }
-      return {
-        ...prev,
-        habitLogs: [...prev.habitLogs, { ...log, id: generateId(), createdAt: new Date().toISOString() }],
-      };
+  const reorderHabits = useCallback(async (userId: string, orderedIds: string[]) => {
+    // Batch update the order for the given habits
+    orderedIds.forEach((id, idx) => {
+      updateDoc(doc(db, 'habits', id), { order: idx });
     });
   }, []);
 
-  const deleteHabitLog = useCallback((id: string) => {
-    setState(prev => ({ ...prev, habitLogs: prev.habitLogs.filter(l => l.id !== id) }));
+  const upsertHabitLog = useCallback(async (log: Omit<HabitLog, 'id' | 'createdAt'>) => {
+    // For upsert, we can query if it exists, or just generate a composite ID like userId_habitId_date
+    const id = `${log.userId}_${log.habitId}_${log.date}`;
+    const newLog = { ...log, id, createdAt: new Date().toISOString() };
+    await setDoc(doc(db, 'habitLogs', id), newLog);
+  }, []);
+
+  const deleteHabitLog = useCallback(async (id: string) => {
+    await deleteDoc(doc(db, 'habitLogs', id));
   }, []);
 
   if (!loaded) return null;

@@ -8,6 +8,7 @@ export type HabitType = 'duration' | 'time' | 'number' | 'yesno';
 export interface User {
   id: string;
   name: string;
+  email?: string;
   avatar: string;
   color: string;
   modules: ModuleType[];
@@ -16,10 +17,9 @@ export interface User {
 
 export interface Task {
   id: string;
-  userId: string;
+  assigneeId: string | null; // null if unassigned
   title: string;
   description: string;
-  assignee: string;
   estimatedMinutes: number;
   deadline: string;
   group: TaskGroup;
@@ -62,4 +62,5 @@ export interface AppState {
   tasks: Task[];
   habits: Habit[];
   habitLogs: HabitLog[];
+  currentOrgId: string | null;
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -21,7 +21,6 @@ import TaskModal from './TaskModal';
 const GROUPS: TaskGroup[] = ['today', 'week', 'month'];
 
 interface Props {
-  userId: string;
   tasks: Task[];
   onAdd: (data: Partial<Task>) => void;
   onUpdate: (id: string, updates: Partial<Task>) => void;
@@ -29,9 +28,26 @@ interface Props {
   onMove: (id: string, group: TaskGroup) => void;
 }
 
-export default function TodoBoard({ userId, tasks, onAdd, onUpdate, onDelete, onMove }: Props) {
+export default function TodoBoard({ tasks, onAdd, onUpdate, onDelete, onMove }: Props) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
+  const autoMovedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoMovedRef.current || tasks.length === 0) return;
+    autoMovedRef.current = true;
+    
+    // Auto-move uncompleted 'today' tasks to 'week' if they were created before today
+    const todayStr = new Date().toISOString().split('T')[0];
+    tasks.forEach(t => {
+      if (t.group === 'today' && t.status !== 'done') {
+        const createdStr = t.createdAt ? t.createdAt.split('T')[0] : '';
+        if (createdStr && createdStr < todayStr) {
+          onMove(t.id, 'week');
+        }
+      }
+    });
+  }, [tasks, onMove]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -46,11 +62,9 @@ export default function TodoBoard({ userId, tasks, onAdd, onUpdate, onDelete, on
 
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over || active.id === over.id) return;
-    // If dropped onto a column droppable
     if (GROUPS.includes(over.id as TaskGroup)) {
       onMove(active.id as string, over.id as TaskGroup);
     } else {
-      // Dropped onto another task — move to that task's group
       const overTask = tasks.find(t => t.id === over.id);
       const dragTask = tasks.find(t => t.id === active.id);
       if (overTask && dragTask && overTask.group !== dragTask.group) {
@@ -72,7 +86,6 @@ export default function TodoBoard({ userId, tasks, onAdd, onUpdate, onDelete, on
 
   return (
     <div>
-      {/* Summary bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 20, flex: 1, flexWrap: 'wrap' }}>
           {GROUPS.map(g => {
@@ -110,7 +123,7 @@ export default function TodoBoard({ userId, tasks, onAdd, onUpdate, onDelete, on
               key={group}
               group={group}
               tasks={getTasksByGroup(group)}
-              onAddTask={(data) => onAdd({ ...data, userId, group })}
+              onAddTask={(data) => onAdd({ ...data, group })}
               onUpdateTask={onUpdate}
               onDeleteTask={onDelete}
             />
@@ -129,7 +142,7 @@ export default function TodoBoard({ userId, tasks, onAdd, onUpdate, onDelete, on
       {showNewTask && (
         <TaskModal
           onClose={() => setShowNewTask(false)}
-          onSave={(data) => { onAdd({ ...data, userId }); setShowNewTask(false); }}
+          onSave={(data) => { onAdd(data); setShowNewTask(false); }}
         />
       )}
     </div>

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
-import { User, ModuleType } from '@/types';
-import UserFormModal from '@/components/UserFormModal';
+import { User } from '@/types';
+import { signInWithPopup, User as FirebaseUser } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
 
 const USER_COLORS = [
   '#7c6aff', '#ff6b6b', '#3de88a', '#ff9f43', '#4ecdc4',
@@ -14,66 +15,62 @@ const USER_COLORS = [
 export default function HomePage() {
   const { state, addUser } = useApp();
   const router = useRouter();
-  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleUserClick = (user: User) => {
-    const firstModule = user.modules[0] ?? 'todo';
-    router.push(`/${user.id}/${firstModule}`);
-  };
-
-  const getModuleLabel = (modules: ModuleType[]) => {
-    if (modules.length === 0) return 'No modules';
-    if (modules.length === 2) return 'Todo · Habits';
-    return modules[0] === 'todo' ? 'Todo Board' : 'Habit Tracker';
+  const handleSignIn = async () => {
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const fbUser = result.user;
+      
+      // Check if user exists in our app state
+      let existingUser = state.users.find(u => u.email === fbUser.email);
+      
+      if (!existingUser) {
+        // Auto-create user profile if they don't exist
+        const newUserObj = {
+          orgId: state.currentOrgId || 'main-org',
+          name: fbUser.displayName || 'New User',
+          email: fbUser.email || '',
+          avatar: fbUser.displayName ? fbUser.displayName.charAt(0).toUpperCase() : 'U',
+          color: USER_COLORS[Math.floor(Math.random() * USER_COLORS.length)],
+          modules: ['todo', 'habits'] as any
+        };
+        
+        await addUser(newUserObj);
+        
+        // Wait a tiny bit for state to update, or just redirect blindly based on what they should be
+        // We'll just assume they'll load into the first user we find next time, but for now we'll route to admin or just wait.
+        setTimeout(() => {
+          router.push(`/admin`); // They can start by setting up their profile
+        }, 1000);
+      } else {
+        const firstModule = existingUser.modules[0] ?? 'todo';
+        router.push(`/${existingUser.id}/${firstModule}`);
+      }
+    } catch (error) {
+      console.error("Error signing in with Google", error);
+      alert("Failed to sign in. Please check console for details (make sure you configured Firebase!).");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <main className="landing-page">
-      <div className="landing-hero">
+    <main className="landing-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      <div className="landing-hero" style={{ textAlign: 'center' }}>
         <h1>Your <span>Personal</span> Tracker</h1>
-        <p>Select your profile to continue tracking your goals &amp; habits.</p>
-      </div>
-
-      <div className="users-grid">
-        {state.users.map(user => (
-          <div
-            key={user.id}
-            className="user-card"
-            onClick={() => handleUserClick(user)}
-            style={{ ['--user-color' as string]: user.color }}
-          >
-            <div
-              className="user-card-avatar"
-              style={{ background: `${user.color}22`, border: `2px solid ${user.color}44` }}
-            >
-              {user.avatar}
-            </div>
-            <div className="user-card-name">{user.name}</div>
-            <div className="user-card-modules">{getModuleLabel(user.modules)}</div>
-          </div>
-        ))}
-
-        <button className="add-user-card" onClick={() => setShowModal(true)}>
-          <div className="add-user-icon">+</div>
-          <div className="add-user-text">Add User</div>
+        <p>Sign in with your Org account to track your goals & habits.</p>
+        
+        <button 
+          className="btn btn-primary" 
+          onClick={handleSignIn} 
+          disabled={loading}
+          style={{ marginTop: '20px', fontSize: '1.2rem', padding: '12px 24px' }}
+        >
+          {loading ? 'Signing In...' : 'Sign in with Google'}
         </button>
       </div>
-
-      {state.users.length > 0 && (
-        <div style={{ marginTop: 40, display: 'flex', gap: 12 }}>
-          <button className="btn btn-ghost" onClick={() => router.push('/admin')}>
-            ⚙️ Manage Users
-          </button>
-        </div>
-      )}
-
-      {showModal && (
-        <UserFormModal
-          onClose={() => setShowModal(false)}
-          onSave={(data) => { addUser(data); setShowModal(false); }}
-          colors={USER_COLORS}
-        />
-      )}
     </main>
   );
 }

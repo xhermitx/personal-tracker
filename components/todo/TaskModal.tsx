@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/types';
+import { useApp } from '@/context/AppContext';
 
 interface Props {
   initial?: Partial<Task>;
@@ -11,9 +12,10 @@ interface Props {
 }
 
 export default function TaskModal({ initial, defaultGroup, onClose, onSave }: Props) {
+  const { state } = useApp();
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
-  const [assignee, setAssignee] = useState(initial?.assignee ?? '');
+  const [assigneeId, setAssigneeId] = useState(initial?.assigneeId ?? '');
   const [hours, setHours] = useState(initial?.estimatedMinutes ? String(Math.floor((initial.estimatedMinutes) / 60)) : '0');
   const [minutes, setMinutes] = useState(initial?.estimatedMinutes ? String((initial.estimatedMinutes) % 60) : '0');
   const [deadline, setDeadline] = useState(initial?.deadline ?? '');
@@ -26,7 +28,7 @@ export default function TaskModal({ initial, defaultGroup, onClose, onSave }: Pr
     onSave({
       title: title.trim(),
       description: description.trim(),
-      assignee: assignee.trim(),
+      assigneeId: assigneeId || null,
       estimatedMinutes: parseInt(hours || '0') * 60 + parseInt(minutes || '0'),
       deadline,
       group,
@@ -81,12 +83,17 @@ export default function TaskModal({ initial, defaultGroup, onClose, onSave }: Pr
           <div className="form-row">
             <div className="form-group">
               <label className="form-label">Assignee</label>
-              <input
+              <select
                 className="form-input"
-                placeholder="Who is responsible?"
-                value={assignee}
-                onChange={e => setAssignee(e.target.value)}
-              />
+                value={assigneeId}
+                onChange={e => setAssigneeId(e.target.value)}
+                style={{ appearance: 'none', background: 'var(--bg-elevated)' }}
+              >
+                <option value="">Unassigned</option>
+                {state.users.map(u => (
+                  <option key={u.id} value={u.id}>{u.name}</option>
+                ))}
+              </select>
             </div>
             <div className="form-group">
               <label className="form-label">Deadline</label>
