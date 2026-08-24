@@ -3,16 +3,23 @@
 import { useState } from 'react';
 import { Task, TaskGroup, TaskStatus } from '@/types';
 import { useApp } from '@/context/AppContext';
+import { auth } from '@/lib/firebase';
+import CustomSelect, { SelectOption } from '../ui/CustomSelect';
+import DatePicker from '../ui/DatePicker';
 
 interface Props {
   initial?: Partial<Task>;
   defaultGroup?: TaskGroup;
   onClose: () => void;
   onSave: (data: Partial<Task>) => void;
+  isOrgBoard?: boolean;
 }
 
-export default function TaskModal({ initial, defaultGroup, onClose, onSave }: Props) {
+export default function TaskModal({ initial, defaultGroup, onClose, onSave, isOrgBoard }: Props) {
   const { state } = useApp();
+  const currentUser = state.users.find(u => 
+    u.id === auth.currentUser?.uid || (u.email && u.email === auth.currentUser?.email)
+  );
   const [title, setTitle] = useState(initial?.title ?? '');
   const [description, setDescription] = useState(initial?.description ?? '');
   const [assigneeId, setAssigneeId] = useState(initial?.assigneeId ?? '');
@@ -25,6 +32,10 @@ export default function TaskModal({ initial, defaultGroup, onClose, onSave }: Pr
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
+    if (isOrgBoard && !assigneeId) {
+      alert("Please select an assignee for this organization task.");
+      return;
+    }
     onSave({
       title: title.trim(),
       description: description.trim(),
@@ -81,28 +92,31 @@ export default function TaskModal({ initial, defaultGroup, onClose, onSave }: Pr
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">Assignee</label>
-              <select
-                className="form-input"
-                value={assigneeId}
-                onChange={e => setAssigneeId(e.target.value)}
-                style={{ appearance: 'none', background: 'var(--bg-elevated)' }}
-              >
-                <option value="">Unassigned</option>
-                {state.users.map(u => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
-                ))}
-              </select>
-            </div>
+            {(isOrgBoard || initial?.assigneeId) && (
+              <div className="form-group">
+                <label className="form-label">Assignee {isOrgBoard ? '*' : ''}</label>
+                <CustomSelect
+                  value={assigneeId}
+                  onChange={setAssigneeId}
+                  options={state.users
+                    .filter(u => u.role === 'member' && u.orgId === currentUser?.orgId)
+                    .map(u => ({
+                      value: u.id,
+                      label: u.name,
+                      color: u.color,
+                      avatarText: u.avatar
+                    }))
+                  }
+                  placeholder="Select a member..."
+                  required={isOrgBoard}
+                />
+              </div>
+            )}
             <div className="form-group">
               <label className="form-label">Deadline</label>
-              <input
-                type="date"
-                className="form-input"
+              <DatePicker
                 value={deadline}
-                onChange={e => setDeadline(e.target.value)}
-                style={{ colorScheme: 'dark' }}
+                onChange={setDeadline}
               />
             </div>
           </div>

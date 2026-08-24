@@ -12,6 +12,8 @@ export interface User {
   avatar: string;
   color: string;
   modules: ModuleType[];
+  role?: 'org' | 'member';
+  orgId?: string;
   createdAt: string;
 }
 
@@ -24,7 +26,9 @@ export interface Task {
   deadline: string;
   group: TaskGroup;
   status: TaskStatus;
+  scope?: 'personal' | 'org';
   createdAt: string;
+  movedAt?: string;
 }
 
 /** A habit definition — created once, logged daily */
@@ -57,10 +61,19 @@ export interface HabitLog {
   createdAt: string;
 }
 
+export interface Invite {
+  id: string; // the token
+  orgId: string;
+  createdAt: string;
+  expiresAt: string;
+  used: boolean;
+}
+
 export interface AppState {
   users: User[];
   tasks: Task[];
   habits: Habit[];
   habitLogs: HabitLog[];
+  invites: Invite[];
   currentOrgId: string | null;
 }

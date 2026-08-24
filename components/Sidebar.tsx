@@ -4,14 +4,16 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { User } from '@/types';
+import { FiClipboard, FiActivity, FiSettings, FiLogOut } from 'react-icons/fi';
+import { BsStars } from 'react-icons/bs';
 
 interface Props {
   user: User;
 }
 
 const NAV_ITEMS = [
-  { key: 'todo', label: 'Todo Board', icon: '📋' },
-  { key: 'habits', label: 'Habit Tracker', icon: '🌱' },
+  { key: 'todo', label: 'Todo Board', icon: <FiClipboard /> },
+  { key: 'habits', label: 'Habit Tracker', icon: <FiActivity /> },
 ];
 
 export default function Sidebar({ user }: Props) {
@@ -24,7 +26,7 @@ export default function Sidebar({ user }: Props) {
   return (
     <aside className="sidebar">
       <div className="sidebar-logo">
-        <div className="sidebar-logo-icon">✦</div>
+        <div className="sidebar-logo-icon"><BsStars /></div>
         <span className="sidebar-logo-text">Tracker</span>
       </div>
 
@@ -45,13 +47,19 @@ export default function Sidebar({ user }: Props) {
 
         <div className="divider" />
 
-        <button className="nav-item" onClick={() => router.push('/admin')}>
-          <span className="nav-item-icon">⚙️</span>
-          <span>Manage Users</span>
-        </button>
-        <button className="nav-item" onClick={() => router.push('/')}>
-          <span className="nav-item-icon">←</span>
-          <span>Switch User</span>
+        {user.role === 'org' && (
+          <button className="nav-item" onClick={() => router.push('/admin')}>
+            <span className="nav-item-icon"><FiSettings /></span>
+            <span>Manage Users</span>
+          </button>
+        )}
+        <button className="nav-item" onClick={async () => {
+          const { auth } = await import('@/lib/firebase');
+          await auth.signOut();
+          router.push('/');
+        }}>
+          <span className="nav-item-icon"><FiLogOut /></span>
+          <span>Sign Out</span>
         </button>
       </nav>
 

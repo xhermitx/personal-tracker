@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { AppState, User, Task, Habit, HabitLog, TaskGroup } from '@/types';
+import { AppState, User, Task, Habit, HabitLog, TaskGroup, Invite } from '@/types';
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
@@ -10,12 +10,13 @@ const initialState: AppState = {
   tasks: [],
   habits: [],
   habitLogs: [],
+  invites: [],
   currentOrgId: null
 };
 
 interface AppContextValue {
   state: AppState;
-  addUser: (user: Omit<User, 'id' | 'createdAt'>) => void;
+  addUser: (user: Omit<User, 'id' | 'createdAt'> & { id?: string }) => Promise<string>;
   updateUser: (id: string, updates: Partial<User>) => void;
   deleteUser: (id: string) => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void;
@@ -28,6 +29,8 @@ interface AppContextValue {
   reorderHabits: (userId: string, orderedIds: string[]) => void;
   upsertHabitLog: (log: Omit<HabitLog, 'id' | 'createdAt'>) => void;
   deleteHabitLog: (id: string) => void;
+  addInvite: (invite: Omit<Invite, 'id' | 'createdAt'>) => string;
+  updateInvite: (id: string, updates: Partial<Invite>) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -41,9 +44,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    // We assume 1 Org for this app, hardcoded as 'main-org' for simplicity as requested
-    const ORG_ID = 'main-org';
-    setState(prev => ({ ...prev, currentOrgId: ORG_ID }));
+
 
     const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
       setState(prev => ({ ...prev, users: snap.docs.map(d => d.data() as User) }));
@@ -57,6 +58,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const unsubLogs = onSnapshot(collection(db, 'habitLogs'), (snap) => {
       setState(prev => ({ ...prev, habitLogs: snap.docs.map(d => d.data() as HabitLog) }));
     });
+    const unsubInvites = onSnapshot(collection(db, 'invites'), (snap) => {
+      setState(prev => ({ ...prev, invites: snap.docs.map(d => d.data() as Invite) }));
+    });
 
     setLoaded(true);
 
@@ -65,13 +69,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       unsubTasks();
       unsubHabits();
       unsubLogs();
+      unsubInvites();
     };
   }, []);
 
-  const addUser = useCallback(async (user: Omit<User, 'id' | 'createdAt'>) => {
-    const id = generateId();
+  const addUser = useCallback(async (user: Omit<User, 'id' | 'createdAt'> & { id?: string }) => {
+    const id = user.id || generateId();
     const newUser = { ...user, id, createdAt: new Date().toISOString() };
     await setDoc(doc(db, 'users', id), newUser);
+    return id;
   }, []);
 
   const updateUser = useCallback(async (id: string, updates: Partial<User>) => {
@@ -98,7 +104,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const moveTask = useCallback(async (id: string, group: TaskGroup) => {
-    await updateDoc(doc(db, 'tasks', id), { group });
+    await updateDoc(doc(db, 'tasks', id), { 
+      group, 
+      movedAt: new Date().toISOString() 
+    });
   }, []);
 
   const addHabit = useCallback((habit: Omit<Habit, 'id' | 'createdAt'>): string => {
@@ -134,6 +143,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await deleteDoc(doc(db, 'habitLogs', id));
   }, []);
 
+  const addInvite = useCallback((invite: Omit<Invite, 'id' | 'createdAt'>): string => {
+    const id = generateId();
+    const newInvite = { ...invite, id, createdAt: new Date().toISOString() };
+    setDoc(doc(db, 'invites', id), newInvite);
+    return id;
+  }, []);
+
+  const updateInvite = useCallback(async (id: string, updates: Partial<Invite>) => {
+    await updateDoc(doc(db, 'invites', id), updates);
+  }, []);
+
   if (!loaded) return null;
 
   return (
@@ -143,6 +163,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addTask, updateTask, deleteTask, moveTask,
       addHabit, updateHabit, deleteHabit, reorderHabits,
       upsertHabitLog, deleteHabitLog,
+      addInvite, updateInvite
     }}>
       {children}
     </AppContext.Provider>

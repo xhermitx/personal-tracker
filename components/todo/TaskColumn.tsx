@@ -33,10 +33,12 @@ function SortableTask({ task, onUpdate, onDelete }: SortableTaskProps) {
   );
 }
 
-const COLUMN_CONFIG: Record<TaskGroup, { label: string; dotColor: string; icon: string }> = {
-  today:  { label: 'Today',      dotColor: '#ff6b6b', icon: '🔥' },
-  week:   { label: 'This Week',  dotColor: '#ff9f43', icon: '📅' },
-  month:  { label: 'This Month', dotColor: '#3de88a', icon: '🗓️' },
+import { FiSun, FiCalendar, FiMap } from 'react-icons/fi';
+
+const COLUMN_CONFIG: Record<TaskGroup, { label: string; dotColor: string; icon: React.ReactNode }> = {
+  today:  { label: 'Today',      dotColor: '#ff6b6b', icon: <FiSun /> },
+  week:   { label: 'This Week',  dotColor: '#ff9f43', icon: <FiCalendar /> },
+  month:  { label: 'This Month', dotColor: '#3de88a', icon: <FiMap /> },
 };
 
 interface Props {
@@ -45,9 +47,10 @@ interface Props {
   onAddTask: (data: Partial<Task>) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
+  isOrgBoard?: boolean;
 }
 
-export default function TaskColumn({ group, tasks, onAddTask, onUpdateTask, onDeleteTask }: Props) {
+export default function TaskColumn({ group, tasks, onAddTask, onUpdateTask, onDeleteTask, isOrgBoard }: Props) {
   const [showModal, setShowModal] = useState(false);
   const { setNodeRef, isOver } = useDroppable({ id: group });
   const cfg = COLUMN_CONFIG[group];
@@ -98,6 +101,7 @@ export default function TaskColumn({ group, tasks, onAddTask, onUpdateTask, onDe
           defaultGroup={group}
           onClose={() => setShowModal(false)}
           onSave={(data) => { onAddTask(data); setShowModal(false); }}
+          isOrgBoard={isOrgBoard}
         />
       )}
     </div>

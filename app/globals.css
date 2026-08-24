@@ -395,6 +395,184 @@ textarea.form-input {
   min-height: 80px;
 }
 
+/* ── Custom Select ────────────────────────────────────────── */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text-primary);
+  font-size: 0.857rem;
+  cursor: pointer;
+  transition: all var(--transition);
+  user-select: none;
+}
+
+.custom-select-trigger:hover:not(.disabled) {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.custom-select-trigger.open {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(124, 106, 255, 0.12);
+}
+
+.custom-select-trigger.placeholder {
+  color: var(--text-muted);
+}
+
+.custom-select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-arrow {
+  color: var(--text-muted);
+  transition: transform var(--transition);
+}
+
+.custom-select-arrow.open {
+  transform: rotate(180deg);
+}
+
+.custom-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: dropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.custom-select-option {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition);
+  display: flex;
+  align-items: center;
+}
+
+.custom-select-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.custom-select-option.selected {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.custom-select-item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-select-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.custom-select-icon {
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.custom-select-empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.custom-select-container.disabled .custom-select-trigger {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Custom DatePicker ────────────────────────────────────── */
+.custom-datepicker-container {
+  position: relative;
+  width: 100%;
+}
+
+.custom-datepicker-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.custom-datepicker-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  color: var(--text-primary);
+  font-size: 0.857rem;
+  transition: all var(--transition);
+}
+
+.custom-datepicker-container:hover .custom-datepicker-display {
+  border-color: var(--border-hover);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.custom-datepicker-input:focus + .custom-datepicker-display {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(124, 106, 255, 0.12);
+}
+
+.custom-datepicker-icon {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
+
+.custom-datepicker-text.placeholder {
+  color: var(--text-muted);
+}
+
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;

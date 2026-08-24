@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { User } from '@/types';
 import UserFormModal from '@/components/UserFormModal';
+import { auth } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const USER_COLORS = [
   '#7c6aff', '#ff6b6b', '#3de88a', '#ff9f43', '#4ecdc4',
@@ -16,9 +18,37 @@ export default function AdminPage() {
   const router = useRouter();
   const [showAdd, setShowAdd] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const currentUser = state.users.find(u => 
+    u.id === auth.currentUser?.uid || (u.email && u.email === auth.currentUser?.email)
+  );
+  const [authLoaded, setAuthLoaded] = useState(false);
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, () => setAuthLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!authLoaded) return;
+    if (!auth.currentUser) {
+      router.replace('/');
+      return;
+    }
+    if (state.users.length === 0) return;
+    if (!currentUser) return; // Wait for current user doc to load
+    
+    if (currentUser.role !== 'org') {
+      router.replace('/');
+    }
+  }, [authLoaded, currentUser, state.users, router]);
+
+  if (!authLoaded || !auth.currentUser || !currentUser || currentUser.role !== 'org') {
+    return null;
+  }
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  if (!currentUser || currentUser.role !== 'org') return null;
 
   return (
     <main style={{ minHeight: '100vh', padding: '40px', maxWidth: 960, margin: '0 auto', position: 'relative', zIndex: 1 }}>

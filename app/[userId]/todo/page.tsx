@@ -46,6 +46,7 @@ export default function TodoPage() {
           deadline: '', 
           group: 'today', 
           status: 'todo', 
+          scope: 'personal',
           ...data 
         })}
         onUpdate={updateTask}

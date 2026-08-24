@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -12,7 +12,6 @@ import {
   DragOverlay,
   closestCorners,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskGroup } from '@/types';
 import TaskColumn from './TaskColumn';
 import TaskCard from './TaskCard';
@@ -26,23 +25,22 @@ interface Props {
   onUpdate: (id: string, updates: Partial<Task>) => void;
   onDelete: (id: string) => void;
   onMove: (id: string, group: TaskGroup) => void;
+  isOrgBoard?: boolean;
 }
 
-export default function TodoBoard({ tasks, onAdd, onUpdate, onDelete, onMove }: Props) {
+export default function TodoBoard({ tasks, onAdd, onUpdate, onDelete, onMove, isOrgBoard }: Props) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [showNewTask, setShowNewTask] = useState(false);
-  const autoMovedRef = useRef(false);
-
   useEffect(() => {
-    if (autoMovedRef.current || tasks.length === 0) return;
-    autoMovedRef.current = true;
+    if (tasks.length === 0) return;
     
-    // Auto-move uncompleted 'today' tasks to 'week' if they were created before today
+    // Auto-move uncompleted 'today' tasks to 'week' if they were moved/created before today
     const todayStr = new Date().toISOString().split('T')[0];
     tasks.forEach(t => {
       if (t.group === 'today' && t.status !== 'done') {
-        const createdStr = t.createdAt ? t.createdAt.split('T')[0] : '';
-        if (createdStr && createdStr < todayStr) {
+        const dateToCheck = t.movedAt || t.createdAt;
+        const dateStr = dateToCheck ? dateToCheck.split('T')[0] : '';
+        if (dateStr && dateStr < todayStr) {
           onMove(t.id, 'week');
         }
       }
@@ -126,6 +124,7 @@ export default function TodoBoard({ tasks, onAdd, onUpdate, onDelete, onMove }: 
               onAddTask={(data) => onAdd({ ...data, group })}
               onUpdateTask={onUpdate}
               onDeleteTask={onDelete}
+              isOrgBoard={isOrgBoard}
             />
           ))}
         </div>
@@ -141,6 +140,7 @@ export default function TodoBoard({ tasks, onAdd, onUpdate, onDelete, onMove }: 
 
       {showNewTask && (
         <TaskModal
+          isOrgBoard={isOrgBoard}
           onClose={() => setShowNewTask(false)}
           onSave={(data) => { onAdd(data); setShowNewTask(false); }}
         />
