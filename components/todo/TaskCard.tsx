@@ -57,11 +57,14 @@ export default function TaskCard({ task, onUpdate, onDelete, isDragging }: Props
   const deadline = formatDeadline(task.deadline);
   const timeStr = formatTime(task.estimatedMinutes);
   
+  const today = new Date().toISOString().split('T')[0];
+  const isOverdue = task.group === 'today' && task.status !== 'done' && task.dueDate && task.dueDate < today;
+  
   const assignee = task.assigneeId ? state.users.find(u => u.id === task.assigneeId) : null;
 
   return (
     <>
-      <div className={`task-card${isDragging ? ' dragging' : ''}`}>
+      <div className={`task-card${isDragging ? ' dragging' : ''}${isOverdue ? ' overdue' : ''}`}>
         <div className="task-card-top">
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, flex: 1 }}>
             <button
@@ -77,6 +80,9 @@ export default function TaskCard({ task, onUpdate, onDelete, isDragging }: Props
             >
               {task.title}
             </span>
+            {isOverdue && (
+              <span className="badge badge-red" style={{ fontSize: '0.6rem', whiteSpace: 'nowrap' }}>Overdue</span>
+            )}
             {task.scope === 'org' && (
               <span className="badge badge-accent" style={{ fontSize: '0.6rem', marginLeft: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <FiBriefcase /> Org

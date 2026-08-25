@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { User } from '@/types';
-import { FiClipboard, FiActivity, FiSettings, FiLogOut } from 'react-icons/fi';
+import { FiClipboard, FiActivity, FiSettings, FiLogOut, FiCalendar, FiBarChart2 } from 'react-icons/fi';
 import { BsStars } from 'react-icons/bs';
 
 interface Props {
@@ -44,6 +44,16 @@ export default function Sidebar({ user }: Props) {
             </Link>
           );
         })}
+
+        {/* History and Analytics always visible */}
+        <Link href={`/${user.id}/history`} className={`nav-item${pathname === `/${user.id}/history` ? ' active' : ''}`}>
+          <span className="nav-item-icon"><FiCalendar /></span>
+          <span>History</span>
+        </Link>
+        <Link href={`/${user.id}/analytics`} className={`nav-item${pathname === `/${user.id}/analytics` ? ' active' : ''}`}>
+          <span className="nav-item-icon"><FiBarChart2 /></span>
+          <span>Analytics</span>
+        </Link>
 
         <div className="divider" />
 

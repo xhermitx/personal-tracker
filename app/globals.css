@@ -1112,6 +1112,10 @@ textarea.form-input {
   transform: rotate(2deg) scale(1.02);
 }
 
+.task-card.overdue {
+  border-left: 3px solid var(--red);
+}
+
 .task-card-top {
   display: flex;
   align-items: flex-start;
@@ -2477,4 +2481,32 @@ textarea.form-input {
   .form-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── History Page ─────────────────────────────────────────── */
+.history-date-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  text-align: left;
+  transition: background var(--transition);
+  border-bottom: 1px solid var(--border);
+}
+
+.history-date-item:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.history-task-row {
+  transition: box-shadow var(--transition);
+}
+
+.history-task-row:hover {
+  box-shadow: var(--shadow-md);
 }

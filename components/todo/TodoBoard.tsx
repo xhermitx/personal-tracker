@@ -33,18 +33,21 @@ export default function TodoBoard({ tasks, onAdd, onUpdate, onDelete, onMove, is
   const [showNewTask, setShowNewTask] = useState(false);
   useEffect(() => {
     if (tasks.length === 0) return;
-    
-    // Auto-move uncompleted 'today' tasks to 'week' if they were moved/created before today
     const todayStr = new Date().toISOString().split('T')[0];
+    // Compute current week/month strings
+    const now = new Date();
+    const jan1 = new Date(now.getFullYear(), 0, 1);
+    const curWeek = `${now.getFullYear()}-${String(Math.ceil(((now.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7)).padStart(2, '0')}`;
+    const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
     tasks.forEach(t => {
-      if (t.group === 'today' && t.status !== 'done') {
-        const dateToCheck = t.movedAt || t.createdAt;
-        const dateStr = dateToCheck ? dateToCheck.split('T')[0] : '';
-        if (dateStr && dateStr < todayStr) {
-          onMove(t.id, 'week');
-        }
+      if (t.status === 'done') return;
+      // Week tasks from a PAST week roll into Month
+      if (t.group === 'week' && t.dueWeek && t.dueWeek < curWeek) {
+        onMove(t.id, 'month');
       }
     });
+    // Note: Today tasks stay in Today even if overdue — they show an overdue badge
   }, [tasks, onMove]);
 
   const sensors = useSensors(

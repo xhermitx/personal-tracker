@@ -29,6 +29,11 @@ export interface Task {
   scope?: 'personal' | 'org';
   createdAt: string;
   movedAt?: string;
+  // History tracking
+  dueDate?: string;   // YYYY-MM-DD: date it was assigned to "Today"
+  dueWeek?: string;   // YYYY-WW: e.g. "2024-35"
+  dueMonth?: string;  // YYYY-MM: e.g. "2024-08"
+  doneAt?: string;    // ISO timestamp when status changed to 'done'
 }
 
 /** A habit definition — created once, logged daily */

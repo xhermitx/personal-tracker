@@ -5,6 +5,17 @@ import { AppState, User, Task, Habit, HabitLog, TaskGroup, Invite } from '@/type
 import { collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
+// ── Date helpers ──────────────────────────────────────────────
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function weekStr(d = new Date()) {
+  const jan1 = new Date(d.getFullYear(), 0, 1);
+  const week = Math.ceil(((d.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7);
+  return `${d.getFullYear()}-${String(week).padStart(2, '0')}`;
+}
+function monthStr(d = new Date()) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
 const initialState: AppState = {
   users: [],
   tasks: [],
@@ -91,12 +102,21 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt'>) => {
     const id = generateId();
-    const newTask = { ...task, id, createdAt: new Date().toISOString() };
+    const now = new Date();
+    const extras: Partial<Task> = {};
+    if (task.group === 'today') extras.dueDate = todayStr();
+    if (task.group === 'week') extras.dueWeek = weekStr(now);
+    if (task.group === 'month') extras.dueMonth = monthStr(now);
+    const newTask = { ...task, ...extras, id, createdAt: now.toISOString() };
     await setDoc(doc(db, 'tasks', id), newTask);
   }, []);
 
   const updateTask = useCallback(async (id: string, updates: Partial<Task>) => {
-    await updateDoc(doc(db, 'tasks', id), updates);
+    const extra: Partial<Task> = {};
+    if (updates.status === 'done') extra.doneAt = new Date().toISOString();
+    // If un-completing a task, clear doneAt (use null instead of undefined for Firebase compatibility)
+    if (updates.status && updates.status !== 'done') extra.doneAt = null as any;
+    await updateDoc(doc(db, 'tasks', id), { ...updates, ...extra });
   }, []);
 
   const deleteTask = useCallback(async (id: string) => {
@@ -104,10 +124,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const moveTask = useCallback(async (id: string, group: TaskGroup) => {
-    await updateDoc(doc(db, 'tasks', id), { 
-      group, 
-      movedAt: new Date().toISOString() 
-    });
+    const now = new Date();
+    const extras: Partial<Task> = { group, movedAt: now.toISOString() };
+    if (group === 'today') extras.dueDate = todayStr();
+    if (group === 'week') extras.dueWeek = weekStr(now);
+    if (group === 'month') extras.dueMonth = monthStr(now);
+    await updateDoc(doc(db, 'tasks', id), extras as any);
   }, []);
 
   const addHabit = useCallback((habit: Omit<Habit, 'id' | 'createdAt'>): string => {

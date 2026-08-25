@@ -6,7 +6,7 @@ import { useApp } from '@/context/AppContext';
 import { useState } from 'react';
 import { auth } from '@/lib/firebase';
 import InviteModal from './InviteModal';
-import { FiClipboard, FiLink, FiLogOut, FiBriefcase } from 'react-icons/fi';
+import { FiClipboard, FiLink, FiLogOut, FiBriefcase, FiBarChart2 } from 'react-icons/fi';
 
 export default function OrgSidebar() {
   const pathname = usePathname();
@@ -51,6 +51,11 @@ export default function OrgSidebar() {
           {pendingOrgTasks > 0 && (
             <span className="badge badge-accent" style={{ fontSize: '0.65rem' }}>{pendingOrgTasks}</span>
           )}
+        </Link>
+
+        <Link href="/org/analytics" className={`nav-item${pathname === '/org/analytics' ? ' active' : ''}`}>
+          <span className="nav-item-icon"><FiBarChart2 /></span>
+          <span>Analytics</span>
         </Link>
 
         <div className="divider" />
