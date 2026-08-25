@@ -41,13 +41,13 @@ export default function TodoPage() {
         onAdd={(data) => addTask({ 
           title: '', 
           description: '', 
-          assigneeId: userId, 
           estimatedMinutes: 0, 
           deadline: '', 
           group: 'today', 
           status: 'todo', 
+          ...data,
+          assigneeId: userId, 
           scope: 'personal',
-          ...data 
         })}
         onUpdate={updateTask}
         onDelete={deleteTask}

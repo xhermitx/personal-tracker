@@ -18,6 +18,26 @@ export default function HomePage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+  useEffect(() => {
+    // If the user visits the landing page but they're already logged in,
+    // wait for state.users to populate, then auto-redirect them.
+    const unsub = auth.onAuthStateChanged(fbUser => {
+      if (fbUser && state.users.length > 0) {
+        const existingUser = state.users.find(u => 
+          u.id === fbUser.uid || (u.email && u.email === fbUser.email)
+        );
+        if (existingUser) {
+          if (existingUser.role === 'org') {
+            router.replace(`/org/todo`);
+          } else {
+            router.replace(`/${existingUser.id}/todo`);
+          }
+        }
+      }
+    });
+    return unsub;
+  }, [state.users, router]);
+
   const handleSignIn = async (isOrgLogin: boolean) => {
     setLoading(true);
     setErrorMsg('');

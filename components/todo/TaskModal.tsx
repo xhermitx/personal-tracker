@@ -36,15 +36,18 @@ export default function TaskModal({ initial, defaultGroup, onClose, onSave, isOr
       alert("Please select an assignee for this organization task.");
       return;
     }
-    onSave({
+    const taskData: Partial<Task> = {
       title: title.trim(),
       description: description.trim(),
-      assigneeId: assigneeId || null,
       estimatedMinutes: parseInt(hours || '0') * 60 + parseInt(minutes || '0'),
       deadline,
       group,
       status,
-    });
+    };
+    if (assigneeId) {
+      taskData.assigneeId = assigneeId;
+    }
+    onSave(taskData);
   };
 
   const groups: { value: TaskGroup; label: string }[] = [

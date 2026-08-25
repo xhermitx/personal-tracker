@@ -42,17 +42,23 @@ export default function HabitDefinitionModal({ initial, onClose, onSave, userId,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-    onSave({
+    
+    const habitData: any = {
       userId,
       name: name.trim(),
       type,
       icon,
       color,
-      unit: type === 'number' ? unit.trim() : undefined,
       isProductionSprint: type === 'duration' ? isProd : false,
       order: initial?.order ?? nextOrder,
       archived: initial?.archived ?? false,
-    });
+    };
+    
+    if (type === 'number' && unit.trim()) {
+      habitData.unit = unit.trim();
+    }
+
+    onSave(habitData as Omit<Habit, 'id' | 'createdAt'>);
   };
 
   return (
